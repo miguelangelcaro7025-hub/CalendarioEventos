@@ -1,0 +1,601 @@
+﻿@model List<CalendarioEventos.Models.Evento>
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendario de Eventos</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 32px;
+        }
+
+        .header-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .mes-navegacion {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .mes-actual {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+            min-width: 200px;
+            text-align: center;
+        }
+
+        .btn-nav {
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .btn-nav:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+
+        .btn-nuevo {
+            padding: 12px 25px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 16px;
+            transition: transform 0.2s;
+        }
+
+        .btn-nuevo:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .calendario {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+
+        .dia-semana {
+            text-align: center;
+            font-weight: bold;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            color: #555;
+        }
+
+        .dia {
+            min-height: 100px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .dia:hover {
+            background: #e9ecef;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .dia.hoy {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .dia.otro-mes {
+            opacity: 0.3;
+        }
+
+        .numero-dia {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .evento-mini {
+            font-size: 11px;
+            padding: 3px 6px;
+            margin-top: 3px;
+            border-radius: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: white;
+        }
+
+        .lista-eventos {
+            margin-top: 30px;
+        }
+
+        .evento-item {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            border-left: 5px solid #667eea;
+            transition: all 0.3s;
+        }
+
+        .evento-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .evento-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 10px;
+        }
+
+        .evento-titulo {
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .evento-acciones {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-accion {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .btn-editar {
+            background: #ffc107;
+            color: #333;
+        }
+
+        .btn-eliminar {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-accion:hover {
+            transform: scale(1.05);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.activo {
+            display: flex;
+        }
+
+        .modal-contenido {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .btn-cerrar {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #999;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        input, textarea, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-guardar {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .btn-guardar:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .mensaje-vacio {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📅 Calendario de Eventos</h1>
+
+        <div class="header-controls">
+            <div class="mes-navegacion">
+                <button class="btn-nav" onclick="mesAnterior()">◀ Anterior</button>
+                <div class="mes-actual" id="mesActual"></div>
+                <button class="btn-nav" onclick="mesSiguiente()">Siguiente ▶</button>
+            </div>
+            <button class="btn-nuevo" onclick="abrirModal()">➕ Nuevo Evento</button>
+        </div>
+
+        <div class="calendario" id="calendario"></div>
+
+        <div class="lista-eventos">
+            <h2>Próximos Eventos</h2>
+            <div id="listaEventos"></div>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal" id="modal">
+        <div class="modal-contenido">
+            <div class="modal-header">
+                <h2 id="modalTitulo">Nuevo Evento</h2>
+                <button class="btn-cerrar" onclick="cerrarModal()">✕</button>
+            </div>
+
+            <form id="formEvento" onsubmit="guardarEvento(event)">
+                <input type="hidden" id="eventoId" />
+
+                <div class="form-group">
+                    <label>Título del Evento:</label>
+                    <input type="text" id="titulo" required />
+                </div>
+
+                <div class="form-group">
+                    <label>Descripción:</label>
+                    <textarea id="descripcion"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>Fecha y Hora de Inicio:</label>
+                    <input type="datetime-local" id="fechaInicio" required />
+                </div>
+
+                <div class="form-group">
+                    <label>Fecha y Hora de Fin:</label>
+                    <input type="datetime-local" id="fechaFin" required />
+                </div>
+
+                <div class="form-group">
+                    <label>Categoría:</label>
+                    <select id="categoria">
+                        <option value="General">General</option>
+                        <option value="Trabajo">Trabajo</option>
+                        <option value="Personal">Personal</option>
+                        <option value="Reunión">Reunión</option>
+                        <option value="Cumpleaños">Cumpleaños</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Color:</label>
+                    <input type="color" id="color" value="#667eea" />
+                </div>
+
+                <div class="form-group">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="recordatorio" />
+                        <label for="recordatorio">Activar recordatorio</label>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-guardar">💾 Guardar Evento</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let eventos = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model));
+        let fechaActual = new Date();
+        let eventoEditando = null;
+
+        function renderizarCalendario() {
+            const año = fechaActual.getFullYear();
+            const mes = fechaActual.getMonth();
+
+            document.getElementById('mesActual').textContent =
+                new Date(año, mes).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+
+            const primerDia = new Date(año, mes, 1);
+            const ultimoDia = new Date(año, mes + 1, 0);
+            const diasMes = ultimoDia.getDate();
+            const primerDiaSemana = primerDia.getDay();
+
+            const calendario = document.getElementById('calendario');
+            calendario.innerHTML = '';
+
+            // Días de la semana
+            const diasSemana = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+            diasSemana.forEach(dia => {
+                const elemento = document.createElement('div');
+                elemento.className = 'dia-semana';
+                elemento.textContent = dia;
+                calendario.appendChild(elemento);
+            });
+
+            // Días vacíos al inicio
+            for (let i = 0; i < primerDiaSemana; i++) {
+                const dia = document.createElement('div');
+                dia.className = 'dia otro-mes';
+                calendario.appendChild(dia);
+            }
+
+            // Días del mes
+            const hoy = new Date();
+            for (let dia = 1; dia <= diasMes; dia++) {
+                const fechaDia = new Date(año, mes, dia);
+                const elemento = document.createElement('div');
+                elemento.className = 'dia';
+
+                if (fechaDia.toDateString() === hoy.toDateString()) {
+                    elemento.classList.add('hoy');
+                }
+
+                elemento.innerHTML = `<div class="numero-dia">${dia}</div>`;
+
+                // Agregar eventos del día
+                const eventosDia = eventos.filter(e => {
+                    const fechaEvento = new Date(e.fechaInicio);
+                    return fechaEvento.getDate() === dia &&
+                           fechaEvento.getMonth() === mes &&
+                           fechaEvento.getFullYear() === año;
+                });
+
+                eventosDia.forEach(evento => {
+                    const eventoMini = document.createElement('div');
+                    eventoMini.className = 'evento-mini';
+                    eventoMini.style.background = evento.color;
+                    eventoMini.textContent = evento.titulo;
+                    elemento.appendChild(eventoMini);
+                });
+
+                elemento.onclick = () => abrirModal(fechaDia);
+                calendario.appendChild(elemento);
+            }
+
+            renderizarListaEventos();
+        }
+
+        function renderizarListaEventos() {
+            const lista = document.getElementById('listaEventos');
+            const eventosOrdenados = [...eventos].sort((a, b) =>
+                new Date(a.fechaInicio) - new Date(b.fechaInicio)
+            );
+
+            if (eventosOrdenados.length === 0) {
+                lista.innerHTML = '<div class="mensaje-vacio">📅 No hay eventos programados</div>';
+                return;
+            }
+
+            lista.innerHTML = eventosOrdenados.map(evento => `
+                <div class="evento-item" style="border-left-color: ${evento.color}">
+                    <div class="evento-header">
+                        <div>
+                            <div class="evento-titulo">${evento.titulo}</div>
+                            <div>${new Date(evento.fechaInicio).toLocaleString('es-ES')}</div>
+                            <div style="margin-top: 5px; color: #666;">${evento.descripcion}</div>
+                            <div style="margin-top: 5px;">
+                                <span style="background: ${evento.color}; color: white; padding: 3px 10px; border-radius: 12px; font-size: 12px;">
+                                    ${evento.categoria}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="evento-acciones">
+                            <button class="btn-accion btn-editar" onclick="editarEvento(${evento.id})">✏️</button>
+                            <button class="btn-accion btn-eliminar" onclick="eliminarEvento(${evento.id})">🗑️</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function abrirModal(fecha = null) {
+            document.getElementById('modal').classList.add('activo');
+            document.getElementById('modalTitulo').textContent = 'Nuevo Evento';
+            document.getElementById('formEvento').reset();
+            document.getElementById('eventoId').value = '';
+            eventoEditando = null;
+
+            if (fecha) {
+                const fechaStr = fecha.toISOString().slice(0, 16);
+                document.getElementById('fechaInicio').value = fechaStr;
+                document.getElementById('fechaFin').value = fechaStr;
+            }
+        }
+
+        function cerrarModal() {
+            document.getElementById('modal').classList.remove('activo');
+        }
+
+        async function guardarEvento(e) {
+            e.preventDefault();
+
+            const evento = {
+                id: eventoEditando || 0,
+                titulo: document.getElementById('titulo').value,
+                descripcion: document.getElementById('descripcion').value,
+                fechaInicio: document.getElementById('fechaInicio').value,
+                fechaFin: document.getElementById('fechaFin').value,
+                categoria: document.getElementById('categoria').value,
+                color: document.getElementById('color').value,
+                tieneRecordatorio: document.getElementById('recordatorio').checked
+            };
+
+            const url = eventoEditando ? '/Eventos/Editar' : '/Eventos/Crear';
+
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(evento)
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                if (!eventoEditando) {
+                    eventos.push(result.evento);
+                }
+                renderizarCalendario();
+                cerrarModal();
+            }
+        }
+
+        function editarEvento(id) {
+            const evento = eventos.find(e => e.id === id);
+            if (evento) {
+                eventoEditando = id;
+                document.getElementById('modalTitulo').textContent = 'Editar Evento';
+                document.getElementById('eventoId').value = evento.id;
+                document.getElementById('titulo').value = evento.titulo;
+                document.getElementById('descripcion').value = evento.descripcion;
+                document.getElementById('fechaInicio').value = new Date(evento.fechaInicio).toISOString().slice(0, 16);
+                document.getElementById('fechaFin').value = new Date(evento.fechaFin).toISOString().slice(0, 16);
+                document.getElementById('categoria').value = evento.categoria;
+                document.getElementById('color').value = evento.color;
+                document.getElementById('recordatorio').checked = evento.tieneRecordatorio;
+                abrirModal();
+            }
+        }
+
+        async function eliminarEvento(id) {
+            if (!confirm('¿Eliminar este evento?')) return;
+
+            const response = await fetch('/Eventos/Eliminar', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id })
+            });
+
+            const result = await response.json();
+            if (result.success) {
+                eventos = eventos.filter(e => e.id !== id);
+                renderizarCalendario();
+            }
+        }
+
+        function mesAnterior() {
+            fechaActual.setMonth(fechaActual.getMonth() - 1);
+            renderizarCalendario();
+        }
+
+        function mesSiguiente() {
+            fechaActual.setMonth(fechaActual.getMonth() + 1);
+            renderizarCalendario();
+        }
+
+        // Inicializar
+        renderizarCalendario();
+    </script>
+</body>
+</html>
